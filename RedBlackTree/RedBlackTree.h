@@ -31,6 +31,7 @@ class RedBlackTree
 public:
 	RedBlackTree();
 	void Insert(T* data);
+	void Delete(T* data);
 
 private:
 	EChildDir ChildDir(RedBlackNode<T>* node);
@@ -42,51 +43,46 @@ public:
 };
 
 template<typename T>
-inline RedBlackTree<T>::RedBlackTree() : _root(nullptr)
+inline RedBlackTree<T>::RedBlackTree()
 {
 	_nil = new RedBlackNode<T>();
 	_nil->color = NodeColor::Black;
 	_nil->left = _nil->right = nullptr;
+	_root = _nil;
 }
 
 template<typename T>
 inline void RedBlackTree<T>::Insert(T* data)
 {
-	if (_root == nullptr)
+	if (_root == _nil)
 	{
 		_root = new RedBlackNode<T>(data);
 		_root->color = NodeColor::Black;
 		_root->parent = nullptr;
 		_root->left = _root->right = _nil;
+		return;
 	}
 	else
 	{
-		if (_root == nullptr)
-		{
-			_root = new RedBlackNode<T>(data);
-			_root->left = _root->right = _nil;
-			_root->color = NodeColor::Black;
-			return;
-		}
 		RedBlackNode<T>* parent = _root;
-		while (parent->left != _nil && parent->right != _nil)
+		while ((parent->left != _nil && parent->right != _nil) == false)
 		{
-			if (parent->data == data)
+			if (*parent->data == *data)
 				return;
 
-			if (parent->data > data)
+			if (*parent->data > *data)
 				parent = parent->left;
 			else if (parent->data < data)
 				parent = parent->right;
 		}
 
-		if (parent->data == data)
+		if (*parent->data == *data)
 			return;
 
 		RedBlackNode<T>* newNode = new RedBlackNode<T>(data);
-		if (parent->data > data)
+		if (*parent->data > *data)
 			parent->left = newNode;
-		else if (parent->data < data)
+		else if (*parent->data < *data)
 			parent->right = newNode;
 
 		newNode->parent = parent;
@@ -148,6 +144,36 @@ inline void RedBlackTree<T>::Insert(T* data)
 		}
 		while ((parent = newNode->parent) != nullptr)
 	}
+}
+
+template<typename T>
+inline void RedBlackTree<T>::Delete(T* data)
+{
+	RedBlackNode<T>* deleteNode = _root;
+	while (deleteNode != _nil)
+	{
+		if (*deleteNode->data == *data)
+		{
+			break;
+		}
+		else if (*deleteNode->data > *data)
+		{
+			deleteNode = deleteNode->child[EChildDir::LEFT];
+		}
+		else if (*deleteNode->data < *data)
+		{
+			deleteNode = deleteNode->child[EChildDir::RIGHT];
+		}
+	}
+
+	if (deleteNode == _nil)
+		return;
+
+	/**
+	* TODO: deleteNode의 child가 2개라면 deleteNode의 sibling의 leftmost child or rightmost child 노드의 값 가져오고
+	* 그 노드를 삭제한 후 그 노드 기준으로 밸런싱 수행
+	*/
+
 }
 
 template<typename T>
