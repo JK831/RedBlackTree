@@ -10,6 +10,7 @@ enum class NodeColor
 
 enum class EChildDir
 {
+	NONE,
 	LEFT,
 	RIGHT,
 };
@@ -171,54 +172,26 @@ inline void RedBlackTree<T>::Delete(T data)
 		return;
 
 	/**
-	* TODO: deleteNode의 child가 2개라면 deleteNode의 sibling의 leftmost child or rightmost child 노드의 값 가져오고
-	* 그 노드를 삭제한 후 그 노드 기준으로 밸런싱 수행
+	* TODO: deleteNode의 child가 2개라면 deleteNode의 leftmost child or rightmost child 노드의 값 가져오고
+	* 그 노드 기준으로 밸런싱 수행
+	* Leftmost or rightmost child node는 그 node의 두 child가 모두 nil이거나 right or left child 하나만 가지고 있다.
 	*/
 	if (deleteNode->child[EChildDir::LEFT] != _nil && deleteNode->child[EChildDir::RIGHT] != _nil)
 	{
-
-	}
-
-	/** When the deleted node has only one child, delete the node and replace it with its child and color it black. */
-	if (deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT] != _nil)
-	{
-		RedBlackNode<T>* child = deleteNode->child[EChildDir::RIGHT];
-		RedBlackNode<T>* grandParent = deleteNode->parent;
-		child->parent = grandParent;
-		child->color = NodeColor::Black;
-		/** deleteNode가 root인 경우 */
-		if (grandParent == nullptr)
+		/** Leftmost child를 찾는다. */
+		RedBlackNode<T>* lMChild = deleteNode->child[EChildDir::LEFT];
+		while (lMChild->child[EChildDir::LEFT] != _nil)
 		{
-			delete deleteNode;
-			return;
+			lMChild = lMChild->child[EChildDir::LEFT];
 		}
 
-		if (grandParent->child[EChildDir::LEFT] == deleteNode)
-			grandParent->child[EChildDir::LEFT] = child;
-		else
-			grandParent->child[EChildDir::RIGHT] = child;
-		delete deleteNode;
-		return;
-	}
-	else if (deleteNode->child[EChildDir::RIGHT] == _nil && deleteNode->child[EChildDir::LEFT] != _nil)
-	{
-		RedBlackNode<T>* child = deleteNode->child[EChildDir::LEFT];
-		RedBlackNode<T>* grandParent = deleteNode->parent;
-		child->parent = grandParent;
-		/** deleteNode가 root인 경우 */
-		if (grandParent == nullptr)
-		{
-			delete deleteNode;
-			return;
-		}
-
-		grandParent->child[EChildDir::LEFT] == deleteNode ? grandParent->child[EChildDir::LEFT] = child : grandParent->child[EChildDir::RIGHT] = child;
-		delete deleteNode;
-		return;
+		/** Leftmost child의 값을 가져온 후 deleteNode를 leftmost child node로 변경 */
+		deleteNode->data = lMChild->data;
+		deleteNode = lMChild;
 	}
 
 	/** When the deleted node is root and has no children => Just delete root and replace it with nil. */
-	if (deleteNode == _root && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT])
+	if (deleteNode == _root && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT] == _nil)
 	{
 		delete _root;
 		_root = _nil;
@@ -226,13 +199,71 @@ inline void RedBlackTree<T>::Delete(T data)
 	}
 
 	/** When the deleted node is red and has no children => remove it */
-	if (deleteNode->color == NodeColor::Red && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT])
+	if (deleteNode->color == NodeColor::Red && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT] == _nil)
 	{
-		RedBlackNode<T>* grandParent = deleteNode->parent;
-		grandParent->child[EChildDir::LEFT] == deleteNode ? grandParent->child[EChildDir::LEFT] = _nil : grandParent->child[EChildDir::RIGHT];
+		RedBlackNode<T>* parent = deleteNode->parent;
+		parent->child[EChildDir::LEFT] == deleteNode ? parent->child[EChildDir::LEFT] = _nil : parent->child[EChildDir::RIGHT];
 		delete deleteNode;
 		return;
 	}
+
+	/** If the ip've reached this far, the delete node isn't root, is black and has no children -> Deleting it will create an imbalance. */
+	RedBlackNode<T>* child = deleteNode->child[EChildDir::LEFT] == _nil ? deleteNode->child[EChildDir::RIGHT] : deleteNode->child[EChildDir::LEFT];
+	RedBlackNode<T>* parent = deleteNode->parent;
+	RedBlackNode<T>* sibling = parent->child[1 - dir];
+	RedBlackNode<T>* cNephew = sibling->child[dir]; // Close nephew
+	RedBlackNode<T>* dNephew = sibling->child[1 - dir]; // Distant nephew
+	EChildDir dir = parent->child[EChildDir::LEFT] == deleteNode ? EChildDir::LEFT : EChildDir::RIGHT;
+	parent->child[dir] = child;
+	if (child != _nil)
+		child->parent = parent;
+
+	delete deleteNode;
+
+	RedBlackNode<T>* curNode = parent;
+	while()
+	{
+		/** When the deleted node has only one child, delete the node and replace it with its child and color it black. */
+		if (child->color == NodeColor::Red)
+		{
+			child->parent = parent;
+			child->color = NodeColor::Black;
+
+			parent->child[dir] = child;
+			//delete deleteNode;
+			return;
+		}
+
+		if (sibling->color == NodeColor::Red)
+		{
+			Rotate(parent, dir);
+			parent->color = NodeColor::Red
+			sibling->color = NodeColor::Black;
+			sibling = parent->child[1 - dir];
+			cNephew = sibling->child[dir];
+			dNephew = sibling->child[1 - dir];
+			child = child->child[dir] != _nil ? child->child[dir] : child->child[1 - dir];
+			continue;
+		}
+
+		/** When parent, sibling, childs of sibling are black -> color sibling red and rebalance the tree on one black level higher */
+		if (sibling->color == NodeColor::Black && cNephew->color == NodeColor::Black && dNephew->color == NodeColor::Black)
+		{
+			sibling->color = NodeColor::Red;
+			sibling = parent->parent->child[1 - dir];
+			child = parent->child[1 - dir];
+			parent = parent->parent;
+		}
+
+		/*parent = curNode->parent;
+		dir = parent->child[EChildDir::LEFT] == curNode ? EChildDir::LEFT : EChildDir::RIGHT;
+		sibling = parent->child[1 - dir];
+		cNephew = sibling->child[dir];
+		dNephew = sibling->child[1 - dir];*/
+
+	}
+
+	delete deleteNode;
 }
 
 template<typename T>
