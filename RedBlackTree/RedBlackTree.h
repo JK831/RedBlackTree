@@ -31,6 +31,7 @@ class RedBlackTree
 {
 public:
 	RedBlackTree();
+	RedBlackNode<T>* Search(T data);
 	void Insert(T data);
 	void Delete(T data);
 
@@ -50,6 +51,28 @@ inline RedBlackTree<T>::RedBlackTree()
 	_nil->color = NodeColor::Black;
 	_nil->left = _nil->right = nullptr;
 	_root = _nil;
+}
+
+template<typename T>
+inline RedBlackNode<T>* RedBlackTree<T>::Search(T data)
+{
+	RedBlackNode<T>* node = _root;
+	while (node != _nil)
+	{
+		if (node->data == data)
+		{
+			break;
+		}
+		else if (node->data > data)
+		{
+			node = node->child[EChildDir::LEFT];
+		}
+		else if (node->data < data)
+		{
+			node = node->child[EChildDir::RIGHT];
+		}
+	}
+	return node;
 }
 
 template<typename T>
@@ -150,30 +173,14 @@ inline void RedBlackTree<T>::Insert(T data)
 template<typename T>
 inline void RedBlackTree<T>::Delete(T data)
 {
-	RedBlackNode<T>* deleteNode = _root;
-	while (deleteNode != _nil)
-	{
-		if (deleteNode->data == data)
-		{
-			break;
-		}
-		else if (deleteNode->data > data)
-		{
-			deleteNode = deleteNode->child[EChildDir::LEFT];
-		}
-		else if (deleteNode->data < data)
-		{
-			deleteNode = deleteNode->child[EChildDir::RIGHT];
-		}
-	}
-
+	RedBlackNode<T>* deleteNode = Search(data);
 	/** 삭제해야 할 노드 찾지 못함. */
 	if (deleteNode == _nil)
 		return;
 
 	/**
 	* TODO: deleteNode의 child가 2개라면 deleteNode의 leftmost child or rightmost child 노드의 값 가져오고
-	* 그 노드 기준으로 밸런싱 수행
+	* 그 노드를 삭제한 후 밸런싱 수행 -> 삭제 전 그 노드의 color, child 보관
 	* Leftmost or rightmost child node는 그 node의 두 child가 모두 nil이거나 right or left child 하나만 가지고 있다.
 	*/
 	if (deleteNode->child[EChildDir::LEFT] != _nil && deleteNode->child[EChildDir::RIGHT] != _nil)
