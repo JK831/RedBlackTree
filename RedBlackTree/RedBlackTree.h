@@ -38,6 +38,7 @@ public:
 private:
 	EChildDir ChildDir(RedBlackNode<T>* node);
 	RedBlackNode<T>* Rotate(RedBlackNode<T>* InRoot, EChildDir InDir);
+	void TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b);
 
 public:
 	RedBlackNode<T>* _root;
@@ -183,18 +184,52 @@ inline void RedBlackTree<T>::Delete(T data)
 	* 그 노드를 삭제한 후 밸런싱 수행 -> 삭제 전 그 노드의 color, child 보관
 	* Leftmost or rightmost child node는 그 node의 두 child가 모두 nil이거나 right or left child 하나만 가지고 있다.
 	*/
-	if (deleteNode->child[EChildDir::LEFT] != _nil && deleteNode->child[EChildDir::RIGHT] != _nil)
+	NodeColor originalColor = deleteNode->color;
+	RedBlackNode<T>* deleteCopy = deleteNode;
+	RedBlackNode<T>* childNode = nullptr;
+	// child가 하나인 경우
+	if (deleteNode->child[EChildDir::LEFT] == _nil)
 	{
-		/** Leftmost child를 찾는다. */
-		RedBlackNode<T>* lMChild = deleteNode->child[EChildDir::LEFT];
-		while (lMChild->child[EChildDir::LEFT] != _nil)
+		childNode = deleteNode->child[EChildDir::RIGHT];
+		TransPlant(deleteNode, childNode);
+	}
+	else if (deleteNode->child[EChildDir::RIGHT == _nil])
+	{
+		childNode = deleteNode->child[EChildDir::LEFT];
+		TransPlant(deleteNode, childNode);
+	}
+	else
+	{
+		/** Leftmost child를 찾고 deleteCopy를 그 node로 변경. */
+		deleteCopy = deleteNode->child[EChildDir::RIGHT];
+		while (deleteCopy->child[EChildDir::LEFT] != _nil)
 		{
-			lMChild = lMChild->child[EChildDir::LEFT];
+			deleteCopy = deleteCopy->child[EChildDir::LEFT];
 		}
+		originalColor = deleteCopy->color; // 삭제될 노드의 색깔 저장
+		childNode = deleteCopy->child[EChildDir::RIGHT];
 
-		/** Leftmost child의 값을 가져온 후 deleteNode를 leftmost child node로 변경 */
-		deleteNode->data = lMChild->data;
-		deleteNode = lMChild;
+		/**
+		* 만약 deleteNode에서 두 level 이상 내려갔다면 deleteNode의 위치에 deleteNode의 child node를 넣고
+		* deleteNode의 자식 노드를 deleteCopy에 넣어준다. */
+		if (deleteCopy != deleteNode->child[EChildDir::RIGHT])
+		{
+			TransPlant(deleteCopy, deleteCopy[EChildDir::RIGHT]);
+			deleteCopy->child[EChildDir::RIGHT] = deleteNode->child[EChildDir::RIGHT];
+			deleteCopy->child[EChildDir::RIGHT]->parent = deleteCopy;
+		}
+		else childNode->parent = deleteCopy;
+
+		TransPlant(deleteNode, deleteCopy); // 실제 삭제될 노드의 값을 deleteNode에 가져온다.
+		deleteCopy->child[EChildDir::LEFT] = deleteNode->child[EChildDir::LEFT];
+		deleteCopy->child[EChildDir::LEFT]->parent = deleteCopy;
+		deleteCopy->color = deleteNode->color;
+	}
+
+	if (originalColor == NodeColor::Black)
+	{
+		/** TODO: Implement DeleteFixup. */
+		DeleteFixUp(childNode);
 	}
 
 	/** When the deleted node is root and has no children => Just delete root and replace it with nil. */
@@ -293,6 +328,18 @@ inline RedBlackNode<T>* RedBlackTree<T>::Rotate(RedBlackNode<T>* InRoot, EChildD
 		_root = oppositeChild;
 
 	return oppositeChild;
+}
+
+template<typename T>
+inline void RedBlackTree<T>::TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b)
+{
+	if (a->parent == nullptr || a->parent == _nil)
+		_root = b;
+	else if (a == a->parent[EChildDir::LEFT])
+		a->parent[EChildDir::LEFT] = b;
+	else
+		a->parent[EChildDir::RIGHT] = b;
+	b->parent = a->parent;
 }
 
 template<typename T>
