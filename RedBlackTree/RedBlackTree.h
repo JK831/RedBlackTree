@@ -40,6 +40,8 @@ private:
 	RedBlackNode<T>* Rotate(RedBlackNode<T>* InRoot, EChildDir InDir);
 	void TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b);
 
+	void DeleteFixUp(RedBlackNode<T>* InNode);
+
 public:
 	RedBlackNode<T>* _root;
 	RedBlackNode<T>* _nil;
@@ -79,6 +81,33 @@ inline RedBlackNode<T>* RedBlackTree<T>::Search(T data)
 template<typename T>
 inline void RedBlackTree<T>::Insert(T data)
 {
+	RedBlackNode<T>* newNode = _root;
+	RedBlackNode<T>* newParent = _nil;
+	while (newNode != _nil)
+	{
+		newParent = newNode;
+		if (data < newNode->data)
+			newNode = newNode->child[EChildDir::LEFT];
+		else
+			newNode = newNode->child[EChildDir::RIGHT];
+	}
+	newNode = new RedBlackNode<T>(data);
+	newNode->parent = newParent;
+	if (newParent == _nil)
+	{
+		_root = newNode;
+	}
+	else if (newNode->data < newParent->data)
+		newParent->child[EChildDir::LEFT] = newNode;
+	else
+		newParent->child[EChildDir::RIGHT] = newNode;
+	newNode->child[EChildDir::LEFT] = _nil;
+	newNode->child[EChildDir::RIGHT] = _nil;
+	newNode->color = NodeColor::Red;
+
+	/** TODO: Implement InsertFixUp. */
+	InsertFixUp(newNode);
+
 	if (_root == _nil)
 	{
 		_root = new RedBlackNode<T>(data);
@@ -120,7 +149,7 @@ inline void RedBlackTree<T>::Insert(T data)
 			if (parent->color == NodeColor::Black) return;
 			
 			grandParent = parent->parent;
-			if (grandParent == nullptr)
+			if (grandParent == nullptr || grandParent == _nil)
 			{
 				/** root node의 색이 red인 경우 black으로 변경한 후 return */
 				parent->color = NodeColor::Black;
@@ -225,87 +254,13 @@ inline void RedBlackTree<T>::Delete(T data)
 		deleteCopy->child[EChildDir::LEFT]->parent = deleteCopy;
 		deleteCopy->color = deleteNode->color;
 	}
+	delete deleteNode;
 
 	if (originalColor == NodeColor::Black)
 	{
 		/** TODO: Implement DeleteFixup. */
 		DeleteFixUp(childNode);
 	}
-
-	/** When the deleted node is root and has no children => Just delete root and replace it with nil. */
-	if (deleteNode == _root && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT] == _nil)
-	{
-		delete _root;
-		_root = _nil;
-		return;
-	}
-
-	/** When the deleted node is red and has no children => remove it */
-	if (deleteNode->color == NodeColor::Red && deleteNode->child[EChildDir::LEFT] == _nil && deleteNode->child[EChildDir::RIGHT] == _nil)
-	{
-		RedBlackNode<T>* parent = deleteNode->parent;
-		parent->child[EChildDir::LEFT] == deleteNode ? parent->child[EChildDir::LEFT] = _nil : parent->child[EChildDir::RIGHT];
-		delete deleteNode;
-		return;
-	}
-
-	/** If the ip've reached this far, the delete node isn't root, is black and has no children -> Deleting it will create an imbalance. */
-	RedBlackNode<T>* child = deleteNode->child[EChildDir::LEFT] == _nil ? deleteNode->child[EChildDir::RIGHT] : deleteNode->child[EChildDir::LEFT];
-	RedBlackNode<T>* parent = deleteNode->parent;
-	RedBlackNode<T>* sibling = parent->child[1 - dir];
-	RedBlackNode<T>* cNephew = sibling->child[dir]; // Close nephew
-	RedBlackNode<T>* dNephew = sibling->child[1 - dir]; // Distant nephew
-	EChildDir dir = parent->child[EChildDir::LEFT] == deleteNode ? EChildDir::LEFT : EChildDir::RIGHT;
-	parent->child[dir] = child;
-	if (child != _nil)
-		child->parent = parent;
-
-	delete deleteNode;
-
-	RedBlackNode<T>* curNode = parent;
-	while()
-	{
-		/** When the deleted node has only one child, delete the node and replace it with its child and color it black. */
-		if (child->color == NodeColor::Red)
-		{
-			child->parent = parent;
-			child->color = NodeColor::Black;
-
-			parent->child[dir] = child;
-			//delete deleteNode;
-			return;
-		}
-
-		if (sibling->color == NodeColor::Red)
-		{
-			Rotate(parent, dir);
-			parent->color = NodeColor::Red
-			sibling->color = NodeColor::Black;
-			sibling = parent->child[1 - dir];
-			cNephew = sibling->child[dir];
-			dNephew = sibling->child[1 - dir];
-			child = child->child[dir] != _nil ? child->child[dir] : child->child[1 - dir];
-			continue;
-		}
-
-		/** When parent, sibling, childs of sibling are black -> color sibling red and rebalance the tree on one black level higher */
-		if (sibling->color == NodeColor::Black && cNephew->color == NodeColor::Black && dNephew->color == NodeColor::Black)
-		{
-			sibling->color = NodeColor::Red;
-			sibling = parent->parent->child[1 - dir];
-			child = parent->child[1 - dir];
-			parent = parent->parent;
-		}
-
-		/*parent = curNode->parent;
-		dir = parent->child[EChildDir::LEFT] == curNode ? EChildDir::LEFT : EChildDir::RIGHT;
-		sibling = parent->child[1 - dir];
-		cNephew = sibling->child[dir];
-		dNephew = sibling->child[1 - dir];*/
-
-	}
-
-	delete deleteNode;
 }
 
 template<typename T>
@@ -340,6 +295,44 @@ inline void RedBlackTree<T>::TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b)
 	else
 		a->parent[EChildDir::RIGHT] = b;
 	b->parent = a->parent;
+}
+
+template<typename T>
+inline void RedBlackTree<T>::DeleteFixUp(RedBlackNode<T>* InNode)
+{
+	while (InNode != _root && InNode->color == NodeColor::Black)
+	{
+		RedBlackNode<T>* sibling = InNode->parent->child[1 - InNode->color];
+		EChildDir InNodeDir = InNode->parent->child[EChildDir::LEFT] == InNode ? EChildDir::LEFT : EChildDir::RIGHT;
+		if (sibling->color == NodeColor::Red)
+		{
+			sibling->color = NodeColor::Black;
+			InNode->parent->color = NodeColor::Red;
+			Rotate(InNode->parent, InNodeDir);
+			sibling = InNode->parent->child[1 - InNodeDir];
+		}
+		if (sibling->child[EChildDir::LEFT]->color == NodeColor::Black
+			&& sibling->child[EChildDir::RIGHT]->color == NodeColor::Black)
+		{
+			sibling->color = NodeColor::Red;
+			InNode = InNode->parent;
+		}
+		else
+		{
+			if (sibling->child[1 - InNodeDir]->color == NodeColor::Black)
+			{
+				sibling->child[InNodeDir]->color = NodeColor::Black;
+				sibling->color = NodeColor::Red;
+				Rotate(sibling, 1 - InNodeDir);
+				sibling = InNode->parent->child[1 - InNodeDir];
+			}
+			sibling->color = InNode->parent->color;
+			InNode->parent->color = NodeColor::Black;
+			Rotate(InNode->parent, InNodeDir);
+			InNode = _root;
+		}
+	}
+	InNode->color = NodeColor::Black;
 }
 
 template<typename T>
