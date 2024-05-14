@@ -40,6 +40,7 @@ private:
 	RedBlackNode<T>* Rotate(RedBlackNode<T>* InRoot, EChildDir InDir);
 	void TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b);
 
+	void InsertFixUp(RedBlackNode<T>* InNode);
 	void DeleteFixUp(RedBlackNode<T>* InNode);
 
 public:
@@ -295,6 +296,39 @@ inline void RedBlackTree<T>::TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b)
 	else
 		a->parent[EChildDir::RIGHT] = b;
 	b->parent = a->parent;
+}
+
+template<typename T>
+inline void RedBlackTree<T>::InsertFixUp(RedBlackNode<T>* InNode)
+{
+	while (InNode->parent->color == NodeColor::Red)
+	{
+		EChildDir parentDir = InNode->parent == InNode->parent->parent->child[EChildDir::LEFT] ?
+			EChildDir::LEFT : EChildDir::RIGHT;
+		RedBlackNode<T>* uncle = InNode->parent->parent->child[1 - parentDir];
+		if (uncle->color == NodeColor::Red)
+		{
+			// Uncle도 red일 경우 parent, uncle 모두 black으로 바꾼 뒤 grandparent를 red로 바꾸고 grandparent 기준으로 다시 밸런싱 진행
+			InNode->parent->color = NodeColor::Black;
+			uncle->color = NodeColor::Black;
+			InNode->parent->parent->color = NodeColor::Red;
+			InNode = InNode->parent->parent;
+		}
+		else
+		{
+			// parent의 방향과 다를 시 parent 기준으로 회전하여 parent와 InNode가 같은 방향에 있게 만든다 (InNode가 parent의 parent가 됨)
+			if (InNode == InNode->parent->child[1 - parentDir])
+			{
+				InNode = InNode->parent;
+				Rotate(InNode, parentDir);
+			}
+			InNode->parent->color = NodeColor::Black;
+			InNode->parent->parent->color = NodeColor::Red;
+			Rotate(InNode->parent->parent, 1 - parentDir);
+		}
+
+		_root->color = NodeColor::Black;
+	}
 }
 
 template<typename T>
