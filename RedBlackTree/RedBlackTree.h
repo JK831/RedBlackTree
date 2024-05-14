@@ -19,7 +19,7 @@ template <typename T>
 struct RedBlackNode
 {
 public:
-	RedBlackNode<T>(T* InData);
+	RedBlackNode<T>(T InData);
 	NodeColor color;
 	T data;
 	RedBlackNode<T>* parent;
@@ -370,6 +370,6 @@ inline void RedBlackTree<T>::DeleteFixUp(RedBlackNode<T>* InNode)
 }
 
 template<typename T>
-inline RedBlackNode<T>::RedBlackNode(T* InData) : color(NodeColor::Red), data(InData)
+inline RedBlackNode<T>::RedBlackNode(T InData) : color(NodeColor::Red), data(InData)
 {
 }
