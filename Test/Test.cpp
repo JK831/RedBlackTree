@@ -1,10 +1,16 @@
 // Test.cpp : Defines the entry point for the application.
 //
 
-#include "framework.h"
-#include "Test.h"
+
+//#include "Test.h"
+#include "pch.h"
+#include "../RedBlackTree/RedBlackTree.h"
 
 #define MAX_LOADSTRING 100
+
+/** Global Variables */
+HWND g_hInsertEditC;
+HWND g_hDeleteEditC;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -125,6 +131,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+    case WM_CREATE:
+    {
+        /** TODO: Adjust the positions of edit controls with screen width, height. */
+        g_hInsertEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT, 20, 20, 100, 20, hWnd, NULL, hInst, NULL);
+        g_hDeleteEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT, 20, 50, 100, 20, hWnd, NULL, hInst, NULL);
+        break;
+    }
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);
@@ -147,6 +160,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
+            HPEN hBlackPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 0));
+            HPEN hRedPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
+
+            /** TODO: Node의 color에 맞춰 그리기 */
+            SelectObject(hdc, hRedPen);
+            Ellipse(hdc, 1, 1, 100, 100);
             EndPaint(hWnd, &ps);
         }
         break;
