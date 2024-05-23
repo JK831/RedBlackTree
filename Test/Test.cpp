@@ -28,6 +28,11 @@ int g_InsertEditPosY = g_InsertButtonPosY;
 int g_DeleteEditPosX = g_DeleteButtonPosX + g_ButtonWidth + 5;
 int g_DeleteEditPosY = g_DeleteButtonPosY;
 
+const int g_WStringBufferLen = 20;
+WCHAR g_WStringBuffer[g_WStringBufferLen];
+
+RedBlackTree<int> g_RBTree;
+
 // Global Variables:
 HINSTANCE hInst;                                // current instance
 WCHAR szTitle[MAX_LOADSTRING];                  // The title bar text
@@ -190,7 +195,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     case WM_COMMAND:
         {
+        int notiCode = HIWORD(wParam);
             int wmId = LOWORD(wParam);
+            if (notiCode == BN_CLICKED)
+            {
+                HWND handle = (HWND)wmId;
+                if (handle == g_hInsertButton)
+                {
+                    if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, ::GetWindowTextLengthW(g_hInsertEditC)) != 0)
+                    {
+                        int num = WStringToInt(&g_WStringBuffer);
+                        g_RBTree.Insert(num);
+                    }
+                }
+                else if (handle == g_hDeleteButton)
+                {
+					if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, ::GetWindowTextLengthW(g_hDeleteEditC)) != 0)
+					{
+						int num = WStringToInt(&g_WStringBuffer);
+						g_RBTree.Delete(num);
+					}
+                }
+            }
             // Parse the menu selections:
             switch (wmId)
             {
@@ -213,7 +239,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             HPEN hBlackPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 0));
             HPEN hRedPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
 
-            /** TODO: Node의 color에 맞춰 그리기 */
+            /** TODO: Node의 color에 맞춰 그리기 
+            * node의 level, 부모의 번호 기준으로 node 그린다. -> 순회하며 각 node 별 번호, level을 저장한 자료구조 return 받는다.
+            */
             SelectObject(hdc, hRedPen);
             Ellipse(hdc, 1, 1, 100, 100);
             EndPaint(hWnd, &ps);
