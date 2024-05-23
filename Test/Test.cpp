@@ -9,8 +9,24 @@
 #define MAX_LOADSTRING 100
 
 /** Global Variables */
+HWND g_hInsertButton;
+HWND g_hDeleteButton;
 HWND g_hInsertEditC;
 HWND g_hDeleteEditC;
+int g_WindowWidth;
+int g_WindowHeight;
+int g_ButtonWidth = 45;
+int g_ButtonHeight = 20;
+int g_EditBoxWidth = 100;
+int g_EditBoxHeight = g_ButtonHeight;
+int g_InsertButtonPosX = 30;
+int g_InsertButtonPosY = 20;
+int g_DeleteButtonPosX = 30;
+int g_DeleteButtonPosY = g_InsertButtonPosY + g_ButtonHeight + 10;
+int g_InsertEditPosX = g_InsertButtonPosX + g_ButtonWidth + 5;
+int g_InsertEditPosY = g_InsertButtonPosY;
+int g_DeleteEditPosX = g_DeleteButtonPosX + g_ButtonWidth + 5;
+int g_DeleteEditPosY = g_DeleteButtonPosY;
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -47,6 +63,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_TEST));
 
     MSG msg;
+
+    /** Initialize the window. */
+    HWND hWnd = ::GetActiveWindow();
+	g_WindowWidth = 1200;
+	g_WindowHeight = 800;
+	RECT rect = { 0, 0, g_WindowWidth, g_WindowHeight };
+	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
+	bool tof = ::SetWindowPos(hWnd, 0, 400, 400, g_WindowWidth, g_WindowHeight, 0);
 
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -134,8 +158,34 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     case WM_CREATE:
     {
         /** TODO: Adjust the positions of edit controls with screen width, height. */
-        g_hInsertEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT, 20, 20, 100, 20, hWnd, NULL, hInst, NULL);
-        g_hDeleteEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT, 20, 50, 100, 20, hWnd, NULL, hInst, NULL);
+		g_hInsertButton = CreateWindowW(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Insert",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			g_InsertButtonPosX,         // x position 
+			g_InsertButtonPosY,         // y position 
+            g_ButtonWidth,        // Button width
+            g_ButtonHeight,        // Button height
+            hWnd,     // Parent window
+			NULL,       // No menu.
+			(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+			NULL);
+		g_hDeleteButton = CreateWindowW(
+			L"BUTTON",  // Predefined class; Unicode assumed 
+			L"Delete",      // Button text 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			g_DeleteButtonPosX,         // x position 
+			g_DeleteButtonPosY,         // y position 
+			g_ButtonWidth,        // Button width
+			g_ButtonHeight,        // Button height
+			hWnd,     // Parent window
+			NULL,       // No menu.
+			(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
+			NULL);
+        g_hInsertEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT,
+            g_InsertEditPosX, g_InsertEditPosY, g_EditBoxWidth, g_EditBoxHeight, hWnd, NULL, hInst, NULL);
+        g_hDeleteEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT,
+            g_DeleteEditPosX, g_DeleteEditPosY, g_EditBoxWidth, g_EditBoxHeight, hWnd, NULL, hInst, NULL);
         break;
     }
     case WM_COMMAND:
