@@ -8,7 +8,7 @@ enum class NodeColor
 	Red,
 };
 
-enum class EChildDir
+enum class EChildDir : int
 {
 	LEFT,
 	RIGHT,
@@ -59,9 +59,9 @@ private:
 template<typename T>
 inline RedBlackTree<T>::RedBlackTree()
 {
-	_nil = new RedBlackNode<T>();
+	_nil = new RedBlackNode<T>((T)0);
 	_nil->color = NodeColor::Black;
-	_nil->left = _nil->right = nullptr;
+	_nil->child[(int)EChildDir::LEFT] = _nil->child[(int)EChildDir::RIGHT] = _nil;
 	_root = _nil;
 }
 
@@ -77,11 +77,11 @@ inline RedBlackNode<T>* RedBlackTree<T>::Search(T data)
 		}
 		else if (node->data > data)
 		{
-			node = node->child[EChildDir::LEFT];
+			node = node->child[(int)EChildDir::LEFT];
 		}
 		else if (node->data < data)
 		{
-			node = node->child[EChildDir::RIGHT];
+			node = node->child[(int)EChildDir::RIGHT];
 		}
 	}
 	return node;
@@ -96,9 +96,9 @@ inline void RedBlackTree<T>::Insert(T data)
 	{
 		newParent = newNode;
 		if (data < newNode->data)
-			newNode = newNode->child[EChildDir::LEFT];
+			newNode = newNode->child[(int)EChildDir::LEFT];
 		else
-			newNode = newNode->child[EChildDir::RIGHT];
+			newNode = newNode->child[(int)EChildDir::RIGHT];
 	}
 	newNode = new RedBlackNode<T>(data);
 	newNode->parent = newParent;
@@ -107,11 +107,11 @@ inline void RedBlackTree<T>::Insert(T data)
 		_root = newNode;
 	}
 	else if (newNode->data < newParent->data)
-		newParent->child[EChildDir::LEFT] = newNode;
+		newParent->child[(int)EChildDir::LEFT] = newNode;
 	else
-		newParent->child[EChildDir::RIGHT] = newNode;
-	newNode->child[EChildDir::LEFT] = _nil;
-	newNode->child[EChildDir::RIGHT] = _nil;
+		newParent->child[(int)EChildDir::RIGHT] = newNode;
+	newNode->child[(int)EChildDir::LEFT] = _nil;
+	newNode->child[(int)EChildDir::RIGHT] = _nil;
 	newNode->color = NodeColor::Red;
 
 	/** TODO: Implement InsertFixUp. */
@@ -165,7 +165,7 @@ inline void RedBlackTree<T>::Insert(T data)
 	//			parent->color = NodeColor::Black;
 	//			return;
 	//		}
-	//		EChildDir parentDir = grandParent->child[EChildDir::LEFT] == parent ? EChildDir::LEFT : EChildDir::RIGHT;
+	//		EChildDir parentDir = grandParent->child[(int)EChildDir::LEFT] == parent ? EChildDir::LEFT : EChildDir::RIGHT;
 	//		RedBlackNode<T>* uncle = grandParent->child[1 - parentDir];
 	//		/** grandparent가 black이고 uncle도 black인 경우 */
 	//		if (uncle->color == NodeColor::Black)
@@ -227,41 +227,41 @@ inline void RedBlackTree<T>::Delete(T data)
 	RedBlackNode<T>* deleteCopy = deleteNode;
 	RedBlackNode<T>* childNode = nullptr;
 	// child가 하나인 경우
-	if (deleteNode->child[EChildDir::LEFT] == _nil)
+	if (deleteNode->child[(int)EChildDir::LEFT] == _nil)
 	{
-		childNode = deleteNode->child[EChildDir::RIGHT];
+		childNode = deleteNode->child[(int)EChildDir::RIGHT];
 		TransPlant(deleteNode, childNode);
 	}
-	else if (deleteNode->child[EChildDir::RIGHT == _nil])
+	else if (deleteNode->child[(int)EChildDir::RIGHT] == _nil)
 	{
-		childNode = deleteNode->child[EChildDir::LEFT];
+		childNode = deleteNode->child[(int)EChildDir::LEFT];
 		TransPlant(deleteNode, childNode);
 	}
 	else
 	{
 		/** Leftmost child를 찾고 deleteCopy를 그 node로 변경. */
-		deleteCopy = deleteNode->child[EChildDir::RIGHT];
-		while (deleteCopy->child[EChildDir::LEFT] != _nil)
+		deleteCopy = deleteNode->child[(int)EChildDir::RIGHT];
+		while (deleteCopy->child[(int)EChildDir::LEFT] != _nil)
 		{
-			deleteCopy = deleteCopy->child[EChildDir::LEFT];
+			deleteCopy = deleteCopy->child[(int)EChildDir::LEFT];
 		}
 		originalColor = deleteCopy->color; // 삭제될 노드의 색깔 저장
-		childNode = deleteCopy->child[EChildDir::RIGHT];
+		childNode = deleteCopy->child[(int)EChildDir::RIGHT];
 
 		/**
 		* 만약 deleteNode에서 두 level 이상 내려갔다면 deleteNode의 위치에 deleteNode의 child node를 넣고
 		* deleteNode의 자식 노드를 deleteCopy에 넣어준다. */
-		if (deleteCopy != deleteNode->child[EChildDir::RIGHT])
+		if (deleteCopy != deleteNode->child[(int)EChildDir::RIGHT])
 		{
-			TransPlant(deleteCopy, deleteCopy[EChildDir::RIGHT]);
-			deleteCopy->child[EChildDir::RIGHT] = deleteNode->child[EChildDir::RIGHT];
-			deleteCopy->child[EChildDir::RIGHT]->parent = deleteCopy;
+			TransPlant(deleteCopy, deleteCopy->child[(int)EChildDir::RIGHT]);
+			deleteCopy->child[(int)EChildDir::RIGHT] = deleteNode->child[(int)EChildDir::RIGHT];
+			deleteCopy->child[(int)EChildDir::RIGHT]->parent = deleteCopy;
 		}
 		else childNode->parent = deleteCopy;
 
 		TransPlant(deleteNode, deleteCopy); // 실제 삭제될 노드의 값을 deleteNode에 가져온다.
-		deleteCopy->child[EChildDir::LEFT] = deleteNode->child[EChildDir::LEFT];
-		deleteCopy->child[EChildDir::LEFT]->parent = deleteCopy;
+		deleteCopy->child[(int)EChildDir::LEFT] = deleteNode->child[(int)EChildDir::LEFT];
+		deleteCopy->child[(int)EChildDir::LEFT]->parent = deleteCopy;
 		deleteCopy->color = deleteNode->color;
 	}
 	delete deleteNode;
@@ -282,13 +282,13 @@ inline RedBlackNode<T>* RedBlackTree<T>::Rotate(RedBlackNode<T>* InRoot, EChildD
 	if (oppositeChild == _nil) CRASH;
 
 	InRoot->child[1 - (int)InDir] = oppositeChild->child[(int)InDir];
-	if (oppositeChild[(int)InDir] != _nil) oppositeChild[(int)InDir]->parent = InRoot;
+	if (oppositeChild->child[(int)InDir] != _nil) oppositeChild->child[(int)InDir]->parent = InRoot;
 	oppositeChild->child[(int)InDir] = InRoot;
 	InRoot->parent = oppositeChild;
 	oppositeChild->parent = parent;
 	if (parent != nullptr)
 	{
-		parent->child[EChildDir::LEFT] == InRoot ? parent->child[EChildDir::RIGHT] = oppositeChild : parent->child[EChildDir::LEFT];
+		parent->child[(int)EChildDir::LEFT] == InRoot ? parent->child[(int)EChildDir::RIGHT] = oppositeChild : parent->child[(int)EChildDir::LEFT];
 	}
 	else
 		_root = oppositeChild;
@@ -301,10 +301,10 @@ inline void RedBlackTree<T>::TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b)
 {
 	if (a->parent == nullptr || a->parent == _nil)
 		_root = b;
-	else if (a == a->parent[EChildDir::LEFT])
-		a->parent[EChildDir::LEFT] = b;
+	else if (a == a->parent->child[(int)EChildDir::LEFT])
+		a->parent->child[(int)EChildDir::LEFT] = b;
 	else
-		a->parent[EChildDir::RIGHT] = b;
+		a->parent->child[(int)EChildDir::RIGHT] = b;
 	b->parent = a->parent;
 }
 
@@ -313,9 +313,9 @@ inline void RedBlackTree<T>::InsertFixUp(RedBlackNode<T>* InNode)
 {
 	while (InNode->parent->color == NodeColor::Red)
 	{
-		EChildDir parentDir = InNode->parent == InNode->parent->parent->child[EChildDir::LEFT] ?
+		EChildDir parentDir = InNode->parent == InNode->parent->parent->child[(int)EChildDir::LEFT] ?
 			EChildDir::LEFT : EChildDir::RIGHT;
-		RedBlackNode<T>* uncle = InNode->parent->parent->child[1 - parentDir];
+		RedBlackNode<T>* uncle = InNode->parent->parent->child[1 - (int)parentDir];
 		if (uncle->color == NodeColor::Red)
 		{
 			// Uncle도 red일 경우 parent, uncle 모두 black으로 바꾼 뒤 grandparent를 red로 바꾸고 grandparent 기준으로 다시 밸런싱 진행
@@ -327,14 +327,14 @@ inline void RedBlackTree<T>::InsertFixUp(RedBlackNode<T>* InNode)
 		else
 		{
 			// parent의 방향과 다를 시 parent 기준으로 회전하여 parent와 InNode가 같은 방향에 있게 만든다 (InNode가 parent의 parent가 됨)
-			if (InNode == InNode->parent->child[1 - parentDir])
+			if (InNode == InNode->parent->child[1 - (int)parentDir])
 			{
 				InNode = InNode->parent;
 				Rotate(InNode, parentDir);
 			}
 			InNode->parent->color = NodeColor::Black;
 			InNode->parent->parent->color = NodeColor::Red;
-			Rotate(InNode->parent->parent, 1 - parentDir);
+			Rotate(InNode->parent->parent, (EChildDir)(1 - (int)parentDir));
 		}
 
 		_root->color = NodeColor::Black;
@@ -346,29 +346,29 @@ inline void RedBlackTree<T>::DeleteFixUp(RedBlackNode<T>* InNode)
 {
 	while (InNode != _root && InNode->color == NodeColor::Black)
 	{
-		RedBlackNode<T>* sibling = InNode->parent->child[1 - InNode->color];
-		EChildDir InNodeDir = InNode->parent->child[EChildDir::LEFT] == InNode ? EChildDir::LEFT : EChildDir::RIGHT;
+		EChildDir InNodeDir = InNode->parent->child[(int)EChildDir::LEFT] == InNode ? EChildDir::LEFT : EChildDir::RIGHT;
+		RedBlackNode<T>* sibling = InNode->parent->child[1 - (int)InNodeDir];
 		if (sibling->color == NodeColor::Red)
 		{
 			sibling->color = NodeColor::Black;
 			InNode->parent->color = NodeColor::Red;
 			Rotate(InNode->parent, InNodeDir);
-			sibling = InNode->parent->child[1 - InNodeDir];
+			sibling = InNode->parent->child[1 - (int)InNodeDir];
 		}
-		if (sibling->child[EChildDir::LEFT]->color == NodeColor::Black
-			&& sibling->child[EChildDir::RIGHT]->color == NodeColor::Black)
+		if (sibling->child[(int)EChildDir::LEFT]->color == NodeColor::Black
+			&& sibling->child[(int)EChildDir::RIGHT]->color == NodeColor::Black)
 		{
 			sibling->color = NodeColor::Red;
 			InNode = InNode->parent;
 		}
 		else
 		{
-			if (sibling->child[1 - InNodeDir]->color == NodeColor::Black)
+			if (sibling->child[1 - (int)InNodeDir]->color == NodeColor::Black)
 			{
-				sibling->child[InNodeDir]->color = NodeColor::Black;
+				sibling->child[(int)InNodeDir]->color = NodeColor::Black;
 				sibling->color = NodeColor::Red;
-				Rotate(sibling, 1 - InNodeDir);
-				sibling = InNode->parent->child[1 - InNodeDir];
+				Rotate(sibling, (EChildDir)(1 - (int)InNodeDir));
+				sibling = InNode->parent->child[1 - (int)InNodeDir];
 			}
 			sibling->color = InNode->parent->color;
 			InNode->parent->color = NodeColor::Black;
