@@ -286,9 +286,9 @@ inline RedBlackNode<T>* RedBlackTree<T>::Rotate(RedBlackNode<T>* InRoot, EChildD
 	oppositeChild->child[(int)InDir] = InRoot;
 	InRoot->parent = oppositeChild;
 	oppositeChild->parent = parent;
-	if (parent != nullptr)
+	if (parent != _nil)
 	{
-		parent->child[(int)EChildDir::LEFT] == InRoot ? parent->child[(int)EChildDir::RIGHT] = oppositeChild : parent->child[(int)EChildDir::LEFT];
+		parent->child[(int)EChildDir::LEFT] == InRoot ? parent->child[(int)EChildDir::LEFT] = oppositeChild : parent->child[(int)EChildDir::RIGHT] = oppositeChild;
 	}
 	else
 		_root = oppositeChild;
@@ -299,7 +299,7 @@ inline RedBlackNode<T>* RedBlackTree<T>::Rotate(RedBlackNode<T>* InRoot, EChildD
 template<typename T>
 inline void RedBlackTree<T>::TransPlant(RedBlackNode<T>* a, RedBlackNode<T>* b)
 {
-	if (a->parent == nullptr || a->parent == _nil)
+	if (a->parent == _nil)
 		_root = b;
 	else if (a == a->parent->child[(int)EChildDir::LEFT])
 		a->parent->child[(int)EChildDir::LEFT] = b;
@@ -337,8 +337,8 @@ inline void RedBlackTree<T>::InsertFixUp(RedBlackNode<T>* InNode)
 			Rotate(InNode->parent->parent, (EChildDir)(1 - (int)parentDir));
 		}
 
-		_root->color = NodeColor::Black;
 	}
+	_root->color = NodeColor::Black;
 }
 
 template<typename T>
