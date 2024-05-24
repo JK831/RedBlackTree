@@ -32,6 +32,16 @@ const int g_WStringBufferLen = 20;
 WCHAR g_WStringBuffer[g_WStringBufferLen];
 
 RedBlackTree<int> g_RBTree;
+int g_NodeWidth = 20;
+int g_NodeHeight = g_NodeWidth;
+
+/** Functions */
+template <typename T>
+T Pow(T base, T n);
+int Log2(int InNum);
+int WStringToInt(const WCHAR* InWString);
+template <typename T>
+void GetTreeStructure(int InArrLen, const RedBlackNode<T>** InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx);
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -91,6 +101,36 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 }
 
 
+
+int Log2(int InNum)
+{
+    int result = 0;
+    int operand = 2;
+    while (InNum / operand > 0)
+    {
+        result++;
+        operand <<= 1;
+    }
+    return result;
+}
+
+int WStringToInt(const WCHAR* InWString)
+{
+    int result = 0;
+    int digit = 0;
+    while (InWString[digit] != L'\0')
+        digit++;
+
+    int pos = 0;
+    while (digit > 0)
+    {
+        result += Pow<int>(10, digit - 1) * (InWString[pos] - L'0');
+        digit--;
+        pos++;
+    }
+
+    return result;
+}
 
 //
 //  FUNCTION: MyRegisterClass()
@@ -199,23 +239,24 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             int wmId = LOWORD(wParam);
             if (notiCode == BN_CLICKED)
             {
-                HWND handle = (HWND)wmId;
+                HWND handle = (HWND)lParam;
                 if (handle == g_hInsertButton)
                 {
-                    if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, ::GetWindowTextLengthW(g_hInsertEditC)) != 0)
+                    if (::SendMessageW(g_hInsertEditC, WM_GETTEXT, g_WStringBufferLen, (LPARAM)g_WStringBuffer) != 0)
                     {
-                        int num = WStringToInt(&g_WStringBuffer);
+                        int num = WStringToInt(g_WStringBuffer);
                         g_RBTree.Insert(num);
                     }
                 }
                 else if (handle == g_hDeleteButton)
                 {
-					if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, ::GetWindowTextLengthW(g_hDeleteEditC)) != 0)
+					if (::SendMessageW(g_hDeleteEditC, WM_GETTEXT, g_WStringBufferLen, (LPARAM)g_WStringBuffer) != 0)
 					{
-						int num = WStringToInt(&g_WStringBuffer);
+						int num = WStringToInt(g_WStringBuffer);
 						g_RBTree.Delete(num);
 					}
                 }
+                InvalidateRect(hWnd, NULL, true);
             }
             // Parse the menu selections:
             switch (wmId)
@@ -242,8 +283,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             /** TODO: Node의 color에 맞춰 그리기 
             * node의 level, 부모의 번호 기준으로 node 그린다. -> 순회하며 각 node 별 번호, level을 저장한 자료구조 return 받는다.
             */
-            SelectObject(hdc, hRedPen);
-            Ellipse(hdc, 1, 1, 100, 100);
+            int treeSize = g_RBTree.GetSize();
+            if (treeSize > 0)
+            {
+
+                int arraySize = 1;
+                while (arraySize <= treeSize)
+                {
+                    arraySize <<= 1;
+                }
+
+                int startX = 500;
+                int startY = 200 - (g_NodeHeight + 10); // Actual start position = 200
+                const RedBlackNode<int>** treeArr = (const RedBlackNode<int>**)malloc(treeSize * sizeof(RedBlackNode<int>*));
+                GetTreeStructure(arraySize, treeArr, &g_RBTree, g_RBTree._root, 0);
+                for (int i = 0; i < arraySize; ++i)
+                {
+                    if (treeArr[i] == g_RBTree._nil)
+                        continue;
+
+                    if (treeArr[i]->color == NodeColor::Black)
+                        SelectObject(hdc, hBlackPen);
+                    else
+                        SelectObject(hdc, hRedPen);
+
+                    int posX;
+                    int posY = startY + Log2(i + 1)  * (g_NodeHeight + 10); // Set Y with the depth of current node in the tree.
+                    if (i % 2 == 1)
+                        posX = startX + i * g_NodeWidth * -2;
+                    else
+                        posX = startX + i * g_NodeWidth;
+                    
+                    Ellipse(hdc, posX, posY, posX + g_NodeWidth, posY + g_NodeHeight);
+                }
+            }
             EndPaint(hWnd, &ps);
         }
         break;
@@ -274,4 +347,31 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         break;
     }
     return (INT_PTR)FALSE;
+}
+
+template<typename T>
+T Pow(T base, T n)
+{
+    T result = 1;
+    while (n)
+    {
+        if (n & 1)
+        {
+            result *= base;
+        }
+        n >>= 1;
+        base *= base;
+    }
+    return result;
+}
+
+template<typename T>
+void GetTreeStructure(int InArrLen, const RedBlackNode<T>** InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx)
+{
+    if (InIdx >= InArrLen)
+        return;
+    /** Idx of the root node = 0 */
+    InArr[InIdx] = InCurNode;
+    GetTreeStructure(InArrLen, InArr, InTree, InCurNode->child[(int)EChildDir::LEFT], InIdx * 2 + 1);
+    GetTreeStructure(InArrLen, InArr, InTree, InCurNode->child[(int)EChildDir::RIGHT], InIdx * 2 + 2);
 }
