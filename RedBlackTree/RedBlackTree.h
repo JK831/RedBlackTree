@@ -10,7 +10,6 @@ enum class NodeColor
 
 enum class EChildDir
 {
-	NONE,
 	LEFT,
 	RIGHT,
 };
@@ -39,6 +38,7 @@ public:
 	RedBlackNode<T>* Search(T data);
 	void Insert(T data);
 	void Delete(T data);
+	inline int GetSize() { return _size; }
 
 private:
 	EChildDir ChildDir(RedBlackNode<T>* node);
@@ -51,6 +51,9 @@ private:
 public:
 	RedBlackNode<T>* _root;
 	RedBlackNode<T>* _nil;
+
+private:
+	int _size;
 };
 
 template<typename T>
@@ -113,6 +116,7 @@ inline void RedBlackTree<T>::Insert(T data)
 
 	/** TODO: Implement InsertFixUp. */
 	InsertFixUp(newNode);
+	_size++;
 
 	//if (_root == _nil)
 	//{
@@ -267,6 +271,7 @@ inline void RedBlackTree<T>::Delete(T data)
 		/** TODO: Implement DeleteFixup. */
 		DeleteFixUp(childNode);
 	}
+	_size--;
 }
 
 template<typename T>
