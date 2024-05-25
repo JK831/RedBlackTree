@@ -8,11 +8,15 @@
 
 #define MAX_LOADSTRING 100
 
+#define INSERT_BUTTON_ID 110
+#define DELETE_BUTTON_ID 111
+
 /** Global Variables */
 HWND g_hInsertButton;
 HWND g_hDeleteButton;
 HWND g_hInsertEditC;
 HWND g_hDeleteEditC;
+
 int g_WindowWidth;
 int g_WindowHeight;
 int g_ButtonWidth = 45;
@@ -32,7 +36,7 @@ const int g_WStringBufferLen = 20;
 WCHAR g_WStringBuffer[g_WStringBufferLen];
 
 RedBlackTree<int> g_RBTree;
-int g_NodeWidth = 20;
+int g_NodeWidth = 50;
 int g_NodeHeight = g_NodeWidth;
 
 /** Functions */
@@ -99,7 +103,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     return (int) msg.wParam;
 }
-
 
 
 int Log2(int InNum)
@@ -212,7 +215,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             g_ButtonWidth,        // Button width
             g_ButtonHeight,        // Button height
             hWnd,     // Parent window
-			NULL,       // No menu.
+            (HMENU)INSERT_BUTTON_ID,
 			(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
 			NULL);
 		g_hDeleteButton = CreateWindowW(
@@ -224,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 			g_ButtonWidth,        // Button width
 			g_ButtonHeight,        // Button height
 			hWnd,     // Parent window
-			NULL,       // No menu.
+            (HMENU)DELETE_BUTTON_ID,
 			(HINSTANCE)GetWindowLongPtr(hWnd, GWLP_HINSTANCE),
 			NULL);
         g_hInsertEditC = CreateWindowW(L"edit", NULL, WS_BORDER | WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_RIGHT,
@@ -235,14 +238,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
     }
     case WM_COMMAND:
         {
-        int notiCode = HIWORD(wParam);
+        //int notiCode = HIWORD(wParam);
             int wmId = LOWORD(wParam);
-            if (notiCode == BN_CLICKED)
+            /*if (notiCode == BN_CLICKED)
             {
                 HWND handle = (HWND)lParam;
                 if (handle == g_hInsertButton)
                 {
-                    if (::SendMessageW(g_hInsertEditC, WM_GETTEXT, g_WStringBufferLen, (LPARAM)g_WStringBuffer) != 0)
+                    if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, g_WStringBufferLen) != 0)
                     {
                         int num = WStringToInt(g_WStringBuffer);
                         g_RBTree.Insert(num);
@@ -250,14 +253,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 }
                 else if (handle == g_hDeleteButton)
                 {
-					if (::SendMessageW(g_hDeleteEditC, WM_GETTEXT, g_WStringBufferLen, (LPARAM)g_WStringBuffer) != 0)
+					if (::GetWindowTextW(g_hDeleteEditC, g_WStringBuffer, g_WStringBufferLen) != 0)
 					{
 						int num = WStringToInt(g_WStringBuffer);
 						g_RBTree.Delete(num);
 					}
                 }
                 InvalidateRect(hWnd, NULL, true);
-            }
+            }*/
             // Parse the menu selections:
             switch (wmId)
             {
@@ -266,6 +269,22 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                 break;
             case IDM_EXIT:
                 DestroyWindow(hWnd);
+                break;
+            case INSERT_BUTTON_ID:
+				if (::GetWindowTextW(g_hInsertEditC, g_WStringBuffer, g_WStringBufferLen) != 0)
+				{
+					int num = WStringToInt(g_WStringBuffer);
+					g_RBTree.Insert(num);
+                    InvalidateRect(hWnd, NULL, true);
+				}
+                break;
+            case DELETE_BUTTON_ID:
+				if (::GetWindowTextW(g_hDeleteEditC, g_WStringBuffer, g_WStringBufferLen) != 0)
+				{
+					int num = WStringToInt(g_WStringBuffer);
+					g_RBTree.Delete(num);
+                    InvalidateRect(hWnd, NULL, true);
+				}
                 break;
             default:
                 return DefWindowProc(hWnd, message, wParam, lParam);
@@ -315,6 +334,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         posX = startX + i * g_NodeWidth;
                     
                     Ellipse(hdc, posX, posY, posX + g_NodeWidth, posY + g_NodeHeight);
+
+                    int textPosX = posX + g_NodeWidth / 3;
+                    int textPosY = posY + g_NodeHeight / 3;
+
+                    WCHAR numString[_MAX_ITOSTR_BASE10_COUNT];
+                    _itow_s(treeArr[i]->data, numString, _MAX_ITOSTR_BASE10_COUNT, 10);
+                    int numStringLen = 0;
+                    while (numString[numStringLen] != L'\0')
+                        numStringLen++;
+                    TextOutW(hdc, textPosX, textPosY, numString, numStringLen);
                 }
             }
             EndPaint(hWnd, &ps);
