@@ -16,6 +16,8 @@ HWND g_hInsertButton;
 HWND g_hDeleteButton;
 HWND g_hInsertEditC;
 HWND g_hDeleteEditC;
+HPEN g_hBlackPen;
+HPEN g_hRedPen;
 
 int g_WindowWidth;
 int g_WindowHeight;
@@ -90,6 +92,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	RECT rect = { 0, 0, g_WindowWidth, g_WindowHeight };
 	::AdjustWindowRect(&rect, WS_OVERLAPPEDWINDOW, false);
 	bool tof = ::SetWindowPos(hWnd, 0, 400, 400, g_WindowWidth, g_WindowHeight, 0);
+
+    /** Create pens. */
+	g_hBlackPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 0));
+	g_hRedPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
 
     // Main message loop:
     while (GetMessage(&msg, nullptr, 0, 0))
@@ -209,7 +215,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_hInsertButton = CreateWindowW(
 			L"BUTTON",  // Predefined class; Unicode assumed 
 			L"Insert",      // Button text 
-			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,  // Styles 
 			g_InsertButtonPosX,         // x position 
 			g_InsertButtonPosY,         // y position 
             g_ButtonWidth,        // Button width
@@ -221,7 +227,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 		g_hDeleteButton = CreateWindowW(
 			L"BUTTON",  // Predefined class; Unicode assumed 
 			L"Delete",      // Button text 
-			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,  // Styles 
+			WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_PUSHBUTTON,  // Styles 
 			g_DeleteButtonPosX,         // x position 
 			g_DeleteButtonPosY,         // y position 
 			g_ButtonWidth,        // Button width
@@ -296,8 +302,6 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             PAINTSTRUCT ps;
             HDC hdc = BeginPaint(hWnd, &ps);
             // TODO: Add any drawing code that uses hdc here...
-            HPEN hBlackPen = CreatePen(PS_SOLID, 2, RGB(0, 0, 0));
-            HPEN hRedPen = CreatePen(PS_SOLID, 2, RGB(255, 0, 0));
 
             /** TODO: Node의 color에 맞춰 그리기 
             * node의 level, 부모의 번호 기준으로 node 그린다. -> 순회하며 각 node 별 번호, level을 저장한 자료구조 return 받는다.
@@ -322,9 +326,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         continue;
 
                     if (treeArr[i]->color == NodeColor::Black)
-                        SelectObject(hdc, hBlackPen);
+                        SelectObject(hdc, g_hBlackPen);
                     else
-                        SelectObject(hdc, hRedPen);
+                        SelectObject(hdc, g_hRedPen);
 
                     int posX;
                     int posY = startY + Log2(i + 1)  * (g_NodeHeight + 10); // Set Y with the depth of current node in the tree.
@@ -345,6 +349,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         numStringLen++;
                     TextOutW(hdc, textPosX, textPosY, numString, numStringLen);
                 }
+                free(treeArr);
             }
             EndPaint(hWnd, &ps);
         }
