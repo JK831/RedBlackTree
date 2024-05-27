@@ -41,13 +41,15 @@ RedBlackTree<int> g_RBTree;
 int g_NodeWidth = 50;
 int g_NodeHeight = g_NodeWidth;
 
+std::vector<std::pair<const RedBlackNode<int>*, int>> g_TreeStructure;
+
 /** Functions */
 template <typename T>
 T Pow(T base, T n);
 int Log2(int InNum);
 int WStringToInt(const WCHAR* InWString);
 template <typename T>
-void GetTreeStructure(int InArrLen, const RedBlackNode<T>** InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx);
+void GetTreeStructure(std::vector<std::pair<const RedBlackNode<T>*, int>>& InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx);
 
 // Global Variables:
 HINSTANCE hInst;                                // current instance
@@ -310,32 +312,51 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             if (treeSize > 0)
             {
 
-                int arraySize = 1;
+                /*int arraySize = 1;
                 while (arraySize <= treeSize)
                 {
                     arraySize <<= 1;
-                }
+                }*/
 
                 int startX = 500;
                 int startY = 200 - (g_NodeHeight + 10); // Actual start position = 200
-                const RedBlackNode<int>** treeArr = (const RedBlackNode<int>**)malloc(treeSize * sizeof(RedBlackNode<int>*));
-                GetTreeStructure(arraySize, treeArr, &g_RBTree, g_RBTree._root, 0);
-                for (int i = 0; i < arraySize; ++i)
+                g_TreeStructure.clear();
+                g_TreeStructure.reserve(treeSize);
+                GetTreeStructure(g_TreeStructure, &g_RBTree, g_RBTree._root, 0);
+                for (int i = 0; i < treeSize; ++i)
                 {
-                    if (treeArr[i] == g_RBTree._nil)
-                        continue;
 
-                    if (treeArr[i]->color == NodeColor::Black)
+                    if (g_TreeStructure[i].first->color == NodeColor::Black)
                         SelectObject(hdc, g_hBlackPen);
                     else
                         SelectObject(hdc, g_hRedPen);
 
-                    int posX;
-                    int posY = startY + Log2(i + 1)  * (g_NodeHeight + 10); // Set Y with the depth of current node in the tree.
-                    if (i % 2 == 1)
-                        posX = startX + i * g_NodeWidth * -2;
-                    else
-                        posX = startX + i * g_NodeWidth;
+                    int depth = Log2(g_TreeStructure[i].second + 1);
+                    int posX = startX - depth * g_NodeWidth * 2; // Initial X position.
+                    if (depth > 0)
+                    {
+                        int startI = 1;
+                        while (g_TreeStructure[i].second > startI)
+                            startI = 2 * startI + 1;
+                        if (g_TreeStructure[i].second < startI)
+                            startI = (startI - 1) / 2;
+                        posX += (g_TreeStructure[i].second - startI) / 2 * g_NodeWidth * 2; // Set X with the relative index among nodes in the same depth.
+
+                        if (g_TreeStructure[i].second % 2 == 0)
+                            posX += 2 * g_NodeWidth;
+                    }
+                    int posY = startY + Log2(g_TreeStructure[i].second + 1) * (g_NodeHeight + 10); // Set Y with the depth of current node in the tree.
+
+                    
+                    ///** Get the node position whether it is on the left or right of the root node. */
+                    //int halfIndex = 1;
+                    //for (int i = 1; i < depth; ++i)
+                    //{
+                    //    halfIndex = 2 * halfIndex + 2;
+                    //}
+                    //if (g_TreeStructure[i].second > halfIndex)
+                    //    posX
+
                     
                     Ellipse(hdc, posX, posY, posX + g_NodeWidth, posY + g_NodeHeight);
 
@@ -343,13 +364,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     int textPosY = posY + g_NodeHeight / 3;
 
                     WCHAR numString[_MAX_ITOSTR_BASE10_COUNT];
-                    _itow_s(treeArr[i]->data, numString, _MAX_ITOSTR_BASE10_COUNT, 10);
+                    _itow_s(g_TreeStructure[i].first->data, numString, _MAX_ITOSTR_BASE10_COUNT, 10);
                     int numStringLen = 0;
                     while (numString[numStringLen] != L'\0')
                         numStringLen++;
                     TextOutW(hdc, textPosX, textPosY, numString, numStringLen);
                 }
-                free(treeArr);
+                //free(treeArr);
             }
             EndPaint(hWnd, &ps);
         }
@@ -400,12 +421,13 @@ T Pow(T base, T n)
 }
 
 template<typename T>
-void GetTreeStructure(int InArrLen, const RedBlackNode<T>** InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx)
+void GetTreeStructure(std::vector<std::pair<const RedBlackNode<T>*, int>>& InArr, const RedBlackTree<T>* InTree, const RedBlackNode<T>* InCurNode, int InIdx)
 {
-    if (InIdx >= InArrLen)
+    if (InCurNode == InTree->_nil)
         return;
     /** Idx of the root node = 0 */
-    InArr[InIdx] = InCurNode;
-    GetTreeStructure(InArrLen, InArr, InTree, InCurNode->child[(int)EChildDir::LEFT], InIdx * 2 + 1);
-    GetTreeStructure(InArrLen, InArr, InTree, InCurNode->child[(int)EChildDir::RIGHT], InIdx * 2 + 2);
+    //std::pair<RedBlackNode<T>*, int> element = { InCurNode, InIdx };
+    InArr.push_back({ InCurNode, InIdx });
+    GetTreeStructure(InArr, InTree, InCurNode->child[(int)EChildDir::LEFT], InIdx * 2 + 1);
+    GetTreeStructure(InArr, InTree, InCurNode->child[(int)EChildDir::RIGHT], InIdx * 2 + 2);
 }
