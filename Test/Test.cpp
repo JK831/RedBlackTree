@@ -333,7 +333,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                         SelectObject(hdc, g_hRedPen);
 
                     int depth = Log2(g_TreeStructure[i].second + 1);
-                    int posX = startX - depth * g_NodeWidth * 2; // Initial X position.
+                    int posX = startX; // - depth * g_NodeWidth * 2; // Initial X position.
                     if (depth > 0)
                     {
                         int halfIndex = 1;
@@ -342,10 +342,28 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 							halfIndex = 2 * halfIndex + 2;
 						}
 
-                        posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 1); // Set X with the relative index among nodes in the same depth and maxDepth.
+                        // 중간을 기준으로 노드를 그릴 위치 설정
+                        /** Node 사이의 간격 = level에 비례하여 2배씩 감소 */
+                        int nodeInterval = g_NodeWidth * Pow(2, maxDepth - depth + 1);
+                        if (g_TreeStructure[i].second <= halfIndex)
+                        {
+                            posX -= nodeInterval / 2; // depth가 깊어질수록 root 노드와의 거리가 2배씩 줄어듦.
+                            //posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 2);
+                            /*posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 1);*/
+                            posX += (g_TreeStructure[i].second - halfIndex) * nodeInterval;
+                            //posX -= g_NodeWidth;
+                        }
+                        else
+                        {
+                            posX += nodeInterval / 2;
+                            //posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 1); // Set X with the relative index among nodes in the same depth and maxDepth.
+                            //posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 1);
+                            posX += (g_TreeStructure[i].second - halfIndex - 1) * nodeInterval;
+                        }
+                        
 
-                        if (g_TreeStructure[i].second % 2 == 0)
-                            posX += 2 * g_NodeWidth;
+                        /*if (g_TreeStructure[i].second % 2 == 0)
+                            posX += g_NodeWidth;*/
                     }
                     int posY = startY + Log2(g_TreeStructure[i].second + 1) * (g_NodeHeight + 10); // Set Y with the depth of current node in the tree.
 
