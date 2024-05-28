@@ -320,6 +320,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 
                 int startX = 500;
                 int startY = 200 - (g_NodeHeight + 10); // Actual start position = 200
+                int maxDepth = Log2(treeSize);
                 g_TreeStructure.clear();
                 g_TreeStructure.reserve(treeSize);
                 GetTreeStructure(g_TreeStructure, &g_RBTree, g_RBTree._root, 0);
@@ -335,12 +336,13 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
                     int posX = startX - depth * g_NodeWidth * 2; // Initial X position.
                     if (depth > 0)
                     {
-                        int startI = 1;
-                        while (g_TreeStructure[i].second > startI)
-                            startI = 2 * startI + 1;
-                        if (g_TreeStructure[i].second < startI)
-                            startI = (startI - 1) / 2;
-                        posX += (g_TreeStructure[i].second - startI) / 2 * g_NodeWidth * 2; // Set X with the relative index among nodes in the same depth.
+                        int halfIndex = 1;
+						for (int i = 1; i < depth; ++i)
+						{
+							halfIndex = 2 * halfIndex + 2;
+						}
+
+                        posX += (g_TreeStructure[i].second - halfIndex) * g_NodeWidth * (maxDepth - depth + 1); // Set X with the relative index among nodes in the same depth and maxDepth.
 
                         if (g_TreeStructure[i].second % 2 == 0)
                             posX += 2 * g_NodeWidth;
